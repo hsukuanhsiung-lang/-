@@ -688,21 +688,20 @@ async function doTranslate() {
 最多 3 个 meanings，最多 2 个 examples。确保中文释义准确自然。`;
 
   try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const resp = await fetch("https://api.moonshot.cn/v1/chat/completions", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "anthropic-dangerous-direct-browser-access": "true"
+        "Authorization": "Bearer sk-Amj4mP8RiNmvSiLz7KYXrO8skPNeYCRWXRxjMr3y5Mr8U4jT"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        model: "moonshot-v1-8k",
         messages: [{ role: "user", content: prompt }]
       })
     });
 
     const data = await resp.json();
-    const text = data.content.map(i => i.text || '').join('');
+    const text = data.choices[0].message.content;
     const clean = text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
     currentResult = result;
