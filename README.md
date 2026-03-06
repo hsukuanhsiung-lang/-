@@ -1,1 +1,913 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>译词 · 英中翻译</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --paper: #f5f0e8;
+    --warm: #e8dfc8;
+    --red: #c0392b;
+    --gold: #b8860b;
+    --muted: #8a7a65;
+    --border: #c8b89a;
+    --card: #faf6ef;
+    --green: #2d6a4f;
+    --shadow: rgba(26,18,9,0.12);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(184,134,11,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(192,57,43,0.05) 0%, transparent 60%);
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(245,240,232,0.9);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.8rem;
+    color: var(--red);
+    letter-spacing: -0.5px;
+  }
+  .logo span {
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-family: 'DM Mono', monospace;
+    display: block;
+    letter-spacing: 2px;
+    margin-top: -4px;
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--warm);
+    border-radius: 10px;
+    padding: 4px;
+    border: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+  .tab-btn.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .vocab-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--red);
+    color: white;
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+  .vocab-count:hover { background: #a93226; transform: translateY(-1px); }
+  .count-badge {
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-weight: 700;
+  }
+
+  /* MAIN LAYOUT */
+  main { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+  /* SEARCH / INPUT */
+  .search-section {
+    margin-bottom: 32px;
+  }
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    background: var(--card);
+    overflow: hidden;
+    box-shadow: 0 4px 20px var(--shadow);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-wrap:focus-within {
+    border-color: var(--gold);
+    box-shadow: 0 4px 24px rgba(184,134,11,0.15);
+  }
+  #wordInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 20px 24px;
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.5rem;
+    color: var(--ink);
+    outline: none;
+    min-width: 0;
+  }
+  #wordInput::placeholder { color: var(--muted); font-style: italic; }
+  .translate-btn {
+    padding: 0 32px;
+    background: var(--red);
+    color: white;
+    border: none;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 2px;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .translate-btn:hover { background: #a93226; }
+  .translate-btn:active { transform: scale(0.98); }
+  .translate-btn.loading { opacity: 0.7; pointer-events: none; }
+
+  /* RESULT CARD */
+  #resultSection { display: none; }
+  #resultSection.show { display: block; animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(12px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px var(--shadow);
+    margin-bottom: 24px;
+  }
+  .result-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--warm);
+    background: linear-gradient(135deg, var(--card) 0%, rgba(232,223,200,0.4) 100%);
+  }
+  .word-display {
+    flex: 1;
+  }
+  .word-en {
+    font-family: 'Instrument Serif', serif;
+    font-size: 2.4rem;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .word-type {
+    display: inline-block;
+    background: var(--warm);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-right: 8px;
+  }
+  .phonetic {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-family: 'DM Mono', monospace;
+    margin-top: 8px;
+  }
+  .speak-btn {
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+  .speak-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .result-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .save-btn {
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .save-btn:hover { border-color: var(--green); color: var(--green); }
+  .save-btn.saved { border-color: var(--green); color: var(--green); background: rgba(45,106,79,0.08); }
+
+  /* TRANSLATION BODY */
+  .result-body { padding: 24px 32px; }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--warm);
+  }
+
+  .meanings-list { list-style: none; margin-bottom: 24px; }
+  .meaning-item {
+    display: flex;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--warm);
+    align-items: flex-start;
+  }
+  .meaning-item:last-child { border-bottom: none; }
+  .meaning-num {
+    min-width: 28px;
+    height: 28px;
+    background: var(--warm);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .meaning-content {}
+  .meaning-zh {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .meaning-en-def {
+    font-size: 0.88rem;
+    color: var(--muted);
+    font-style: italic;
+    font-family: 'Instrument Serif', serif;
+    line-height: 1.5;
+  }
+
+  /* EXAMPLES */
+  .examples-section { margin-top: 8px; }
+  .example-item {
+    background: rgba(232,223,200,0.35);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  .example-en {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+  .example-zh {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* PINYIN SECTION */
+  .pinyin-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(192,57,43,0.06);
+    border: 1px solid rgba(192,57,43,0.2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 20px;
+  }
+  .pinyin-label { font-size: 0.75rem; color: var(--red); font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+  .pinyin-text { font-size: 1.1rem; color: var(--ink); font-family: 'Noto Serif SC', serif; }
+  .pinyin-listen {
+    margin-left: auto;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pinyin-listen:hover { background: #a93226; }
+
+  /* VOCAB PANEL */
+  #vocabPanel { display: none; }
+  #vocabPanel.show { display: block; animation: fadeUp 0.3s ease; }
+  
+  .vocab-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px var(--shadow);
+  }
+  .vocab-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--warm);
+    background: linear-gradient(135deg, var(--card), rgba(232,223,200,0.5));
+  }
+  .vocab-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .vocab-actions { display: flex; gap: 10px; align-items: center; }
+  .vocab-search {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.9rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    width: 180px;
+    transition: border-color 0.2s;
+  }
+  .vocab-search:focus { border-color: var(--gold); }
+  .clear-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .vocab-grid {
+    padding: 24px 32px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+  .vocab-grid::-webkit-scrollbar { width: 6px; }
+  .vocab-grid::-webkit-scrollbar-track { background: var(--warm); border-radius: 3px; }
+  .vocab-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .vocab-item {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .vocab-item::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--gold));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .vocab-item:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 4px 16px var(--shadow); }
+  .vocab-item:hover::before { opacity: 1; }
+  .vocab-word { font-family: 'Instrument Serif', serif; font-size: 1.2rem; margin-bottom: 4px; }
+  .vocab-zh { font-size: 0.9rem; color: var(--red); font-weight: 600; margin-bottom: 4px; }
+  .vocab-pinyin-small { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .vocab-date { font-size: 0.7rem; color: var(--border); margin-top: 6px; font-family: 'DM Mono', monospace; }
+  .vocab-del {
+    position: absolute; top: 10px; right: 10px;
+    background: none; border: none; color: var(--border);
+    cursor: pointer; font-size: 0.85rem; transition: color 0.2s;
+    padding: 2px 5px; border-radius: 4px;
+  }
+  .vocab-del:hover { color: var(--red); background: rgba(192,57,43,0.08); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    grid-column: 1/-1;
+  }
+  .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
+  .empty-text { font-size: 1rem; }
+
+  /* LOADING SPINNER */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ERROR */
+  .error-msg {
+    background: rgba(192,57,43,0.1);
+    border: 1px solid rgba(192,57,43,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--red);
+    font-size: 0.95rem;
+    margin-top: 16px;
+    display: none;
+  }
+  .error-msg.show { display: block; animation: fadeUp 0.3s ease; }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-family: 'Noto Serif SC', serif;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 640px) {
+    header { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+    main { padding: 20px 12px; }
+    .result-header { padding: 18px 20px; flex-direction: column; gap: 14px; }
+    .result-body { padding: 18px 20px; }
+    .vocab-header { padding: 18px 20px; flex-wrap: wrap; gap: 10px; }
+    .vocab-grid { padding: 16px; grid-template-columns: 1fr 1fr; }
+    .word-en { font-size: 1.8rem; }
+    .tabs { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    译词
+    <span>EN → ZH TRANSLATOR</span>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showSection('translate')">翻译</button>
+    <button class="tab-btn" onclick="showSection('vocab')">生词本</button>
+  </div>
+  <button class="vocab-count" onclick="showSection('vocab')">
+    📚 生词本 <span class="count-badge" id="vocabCountBadge">0</span>
+  </button>
+</header>
+
+<main>
+  <div id="translateSection">
+    <div class="search-section">
+      <div class="input-wrap">
+        <input type="text" id="wordInput" placeholder="输入英文单词或短语…" 
+               autocomplete="off" spellcheck="false" />
+        <button class="translate-btn" id="translateBtn" onclick="doTranslate()">
+          翻译
+        </button>
+      </div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div id="resultSection">
+      <div class="result-card">
+        <div class="result-header">
+          <div class="word-display">
+            <div class="word-en" id="displayWord"></div>
+            <div style="margin-top:8px;">
+              <span class="word-type" id="displayType"></span>
+              <span class="phonetic">
+                <span id="displayPhonetic"></span>
+                <button class="speak-btn" onclick="speakEnglish()" title="朗读英文">🔊</button>
+              </span>
+            </div>
+          </div>
+          <div class="result-right">
+            <button class="save-btn" id="saveBtn" onclick="saveWord()">
+              ＋ 加入生词本
+            </button>
+          </div>
+        </div>
+        <div class="result-body">
+          <div class="section-label">中文释义</div>
+          <ul class="meanings-list" id="meaningsList"></ul>
+
+          <div class="pinyin-section" id="pinyinSection">
+            <div>
+              <div class="pinyin-label">拼音读法</div>
+              <div class="pinyin-text" id="pinyinText"></div>
+            </div>
+            <button class="pinyin-listen" onclick="speakChinese()">🔊 听读音</button>
+          </div>
+
+          <div class="examples-section" style="margin-top:24px;">
+            <div class="section-label">例句</div>
+            <div id="examplesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="vocabPanel">
+    <div class="vocab-panel">
+      <div class="vocab-header">
+        <div class="vocab-title">
+          📚 我的生词本
+        </div>
+        <div class="vocab-actions">
+          <input class="vocab-search" type="text" placeholder="搜索…" id="vocabSearch" oninput="renderVocab()"/>
+          <button class="clear-btn" onclick="clearAllVocab()">清空全部</button>
+        </div>
+      </div>
+      <div class="vocab-grid" id="vocabGrid"></div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────
+let currentResult = null;
+let currentSection = 'translate';
+const STORAGE_KEY = 'yici_vocab_v1';
+
+function getVocab() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } 
+  catch { return []; }
+}
+function setVocab(v) { localStorage.setItem(STORAGE_KEY, JSON.stringify(v)); }
+function updateBadge() {
+  document.getElementById('vocabCountBadge').textContent = getVocab().length;
+}
+
+// ── SECTION TOGGLE ─────────────────────────────────
+function showSection(s) {
+  currentSection = s;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.includes(s === 'translate' ? '翻译' : '生词')) b.classList.add('active');
+  });
+  document.getElementById('translateSection').style.display = s === 'translate' ? 'block' : 'none';
+  const vp = document.getElementById('vocabPanel');
+  if (s === 'vocab') {
+    vp.style.display = 'block';
+    setTimeout(() => vp.classList.add('show'), 10);
+    renderVocab();
+  } else {
+    vp.classList.remove('show');
+    vp.style.display = 'none';
+  }
+}
+
+// ── TRANSLATE ──────────────────────────────────────
+document.getElementById('wordInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doTranslate();
+});
+
+async function doTranslate() {
+  const word = document.getElementById('wordInput').value.trim();
+  if (!word) return;
+
+  const btn = document.getElementById('translateBtn');
+  const errEl = document.getElementById('errorMsg');
+  btn.classList.add('loading');
+  btn.innerHTML = '<div class="spinner"></div>';
+  errEl.classList.remove('show');
+  document.getElementById('resultSection').classList.remove('show');
+
+  const prompt = `你是一个专业的英汉词典助手。用户输入了一个英文单词或短语："${word}"
+
+请返回一个 JSON 对象（仅返回 JSON，不要任何其他文字或 markdown 代码块），格式如下：
+{
+  "word": "原单词",
+  "type": "词性（如 noun/verb/adjective/adverb/phrase 等，用英文）",
+  "phonetic": "国际音标（如 /ˈwɜːrd/）",
+  "meanings": [
+    {
+      "zh": "主要中文释义",
+      "en_def": "英文定义（简短）"
+    }
+  ],
+  "pinyin_summary": "所有中文主要释义合在一起的拼音（用空格分隔各词，如：dān cí）",
+  "zh_main": "最主要的中文释义（一两个词）",
+  "examples": [
+    {
+      "en": "英文例句",
+      "zh": "对应中文翻译"
+    }
+  ]
+}
+
+最多 3 个 meanings，最多 2 个 examples。确保中文释义准确自然。`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.content.map(i => i.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    currentResult = result;
+    renderResult(result);
+
+    // Auto-save to history
+    autoSaveToHistory(result, word);
+    updateBadge();
+
+  } catch(e) {
+    errEl.textContent = '翻译失败，请检查网络连接后重试。';
+    errEl.classList.add('show');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '翻译';
+}
+
+function renderResult(r) {
+  document.getElementById('displayWord').textContent = r.word;
+  document.getElementById('displayType').textContent = r.type || '';
+  document.getElementById('displayPhonetic').textContent = r.phonetic || '';
+
+  // Meanings
+  const ml = document.getElementById('meaningsList');
+  ml.innerHTML = '';
+  (r.meanings || []).forEach((m, i) => {
+    ml.innerHTML += `
+      <li class="meaning-item">
+        <div class="meaning-num">${i+1}</div>
+        <div class="meaning-content">
+          <div class="meaning-zh">${m.zh}</div>
+          <div class="meaning-en-def">${m.en_def}</div>
+        </div>
+      </li>`;
+  });
+
+  // Pinyin
+  document.getElementById('pinyinText').textContent = r.pinyin_summary || '';
+
+  // Examples
+  const el = document.getElementById('examplesList');
+  el.innerHTML = '';
+  (r.examples || []).forEach(ex => {
+    el.innerHTML += `
+      <div class="example-item">
+        <div class="example-en">${ex.en}</div>
+        <div class="example-zh">${ex.zh}</div>
+      </div>`;
+  });
+
+  // Save btn state
+  updateSaveBtn(r.word);
+
+  const rs = document.getElementById('resultSection');
+  rs.style.display = 'block';
+  setTimeout(() => rs.classList.add('show'), 10);
+}
+
+function updateSaveBtn(word) {
+  const vocab = getVocab();
+  const exists = vocab.some(v => v.word.toLowerCase() === word.toLowerCase());
+  const btn = document.getElementById('saveBtn');
+  if (exists) {
+    btn.classList.add('saved');
+    btn.innerHTML = '✓ 已在生词本';
+  } else {
+    btn.classList.remove('saved');
+    btn.innerHTML = '＋ 加入生词本';
+  }
+}
+
+// ── AUTO SAVE (every translated word goes to history) ──
+function autoSaveToHistory(result, rawWord) {
+  let vocab = getVocab();
+  const key = result.word.toLowerCase();
+  const exists = vocab.some(v => v.word.toLowerCase() === key);
+  if (!exists) {
+    vocab.unshift({
+      word: result.word,
+      zh: result.zh_main || (result.meanings[0] && result.meanings[0].zh) || '',
+      pinyin: result.pinyin_summary || '',
+      date: new Date().toLocaleDateString('zh-CN'),
+      full: result
+    });
+    setVocab(vocab);
+  }
+}
+
+// ── MANUAL SAVE ────────────────────────────────────
+function saveWord() {
+  if (!currentResult) return;
+  let vocab = getVocab();
+  const key = currentResult.word.toLowerCase();
+  const exists = vocab.some(v => v.word.toLowerCase() === key);
+  if (exists) {
+    showToast('已在生词本中啦！');
+    return;
+  }
+  vocab.unshift({
+    word: currentResult.word,
+    zh: currentResult.zh_main || (currentResult.meanings[0] && currentResult.meanings[0].zh) || '',
+    pinyin: currentResult.pinyin_summary || '',
+    date: new Date().toLocaleDateString('zh-CN'),
+    full: currentResult
+  });
+  setVocab(vocab);
+  updateBadge();
+  updateSaveBtn(currentResult.word);
+  showToast('已加入生词本 ✓');
+}
+
+// ── VOCAB PANEL ────────────────────────────────────
+function renderVocab() {
+  const vocab = getVocab();
+  const query = (document.getElementById('vocabSearch')?.value || '').toLowerCase();
+  const grid = document.getElementById('vocabGrid');
+  const filtered = query ? vocab.filter(v => 
+    v.word.toLowerCase().includes(query) || v.zh.includes(query)
+  ) : vocab;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📖</div>
+      <div class="empty-text">${query ? '没有找到匹配的单词' : '生词本还是空的，快去翻译几个单词吧！'}</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((v, i) => `
+    <div class="vocab-item" onclick="loadVocabWord('${escHtml(v.word)}')">
+      <button class="vocab-del" onclick="deleteVocab(event, '${escHtml(v.word)}')">✕</button>
+      <div class="vocab-word">${escHtml(v.word)}</div>
+      <div class="vocab-zh">${escHtml(v.zh)}</div>
+      <div class="vocab-pinyin-small">${escHtml(v.pinyin)}</div>
+      <div class="vocab-date">${v.date}</div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function deleteVocab(e, word) {
+  e.stopPropagation();
+  let vocab = getVocab();
+  vocab = vocab.filter(v => v.word.toLowerCase() !== word.toLowerCase());
+  setVocab(vocab);
+  updateBadge();
+  renderVocab();
+  showToast('已删除');
+}
+
+function clearAllVocab() {
+  if (!getVocab().length) return;
+  if (confirm('确定要清空全部生词本吗？')) {
+    setVocab([]);
+    updateBadge();
+    renderVocab();
+    showToast('已清空生词本');
+  }
+}
+
+function loadVocabWord(word) {
+  showSection('translate');
+  document.getElementById('wordInput').value = word;
+  // Find cached result
+  const vocab = getVocab();
+  const entry = vocab.find(v => v.word.toLowerCase() === word.toLowerCase());
+  if (entry && entry.full) {
+    currentResult = entry.full;
+    renderResult(entry.full);
+  } else {
+    doTranslate();
+  }
+}
+
+// ── TTS ────────────────────────────────────────────
+function speakEnglish() {
+  if (!currentResult) return;
+  const utt = new SpeechSynthesisUtterance(currentResult.word);
+  utt.lang = 'en-US';
+  utt.rate = 0.85;
+  speechSynthesis.speak(utt);
+}
+
+function speakChinese() {
+  if (!currentResult) return;
+  const zh = currentResult.zh_main || (currentResult.meanings[0] && currentResult.meanings[0].zh) || '';
+  if (!zh) return;
+  const utt = new SpeechSynthesisUtterance(zh);
+  utt.lang = 'zh-CN';
+  utt.rate = 0.85;
+  speechSynthesis.speak(utt);
+}
+
+// ── TOAST ──────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── INIT ───────────────────────────────────────────
+updateBadge();
+document.getElementById('wordInput').focus();
+</script>
+</body>
+</html>
 # -
